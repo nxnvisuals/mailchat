@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MailChat palette — calm indigo on warm paper. */
+:root {
+  --background: 40 30% 97%;
+  --foreground: 235 20% 15%;
+  --card: 0 0% 100%;
+  --border: 234 15% 88%;
+  --muted: 234 20% 94%;
+  --muted-foreground: 234 10% 45%;
+  --primary: 243 60% 51%;
+  --primary-foreground: 0 0% 100%;
+  --destructive: 0 72% 45%;
+  --ring: 243 60% 51%;
+}
+
+body {
+  @apply bg-background text-foreground font-sans antialiased;
+}
+
+@layer components {
+  .card {
+    @apply bg-card border border-border rounded-2xl shadow-sm;
+  }
+  .input {
+    @apply w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/60 transition;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 hover:opacity-90 active:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-muted text-foreground text-sm font-medium px-5 py-2.5 hover:bg-muted/70 disabled:opacity-50 disabled:cursor-not-allowed transition;
+  }
+}

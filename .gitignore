@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-lite
+*.local
+*.log
+.DS_Store
+supabase/functions/app/load-assets.sql
