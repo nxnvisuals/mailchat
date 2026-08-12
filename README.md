@@ -53,6 +53,27 @@ Works with **Gmail** (3-minute setup with an app password) and
 To allow another person: Supabase dashboard → Table Editor →
 `mail_allowed_users` → insert their email.
 
+## Build it on Lovable
+
+The repo is Lovable-ready — the same Vite + React + Tailwind shape as a
+Lovable project, with the `lovable-tagger` dev plugin wired in.
+
+1. Go to lovable.dev → **Create** → **Import from GitHub** and pick
+   `nxnvisuals/mailchat`.
+2. Lovable builds it and gives the project its own live URL (something like
+   `mailchat.lovable.app`), plus visual editing and chat-based changes. Use
+   **Publish** there the same way as with the salon site.
+3. No keys or settings to configure — the app already knows its backend.
+   Accounts, connected mailboxes and settings are shared between the Lovable
+   copy and the Supabase-hosted copy; both talk to the same MailChat project.
+
+One Outlook note: Microsoft only sends sign-ins back to web addresses that
+are registered in the Entra app. The connect screen always shows the exact
+"Redirect URI" for wherever the app is running — the first time you connect
+Outlook from the Lovable URL, add that shown value in the registration
+(Authentication → Web → Add URI) next to the existing one. Gmail needs
+nothing extra.
+
 ## Development
 
 ```sh
