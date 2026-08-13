@@ -33,7 +33,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEFAULT_AI_MODEL = "claude-opus-5";
+// Polishing a short note into an email is well within Haiku's abilities,
+// and it's the fastest and cheapest current Claude model — keeps the
+// owner's API bill near zero. Accounts can still override ai_model.
+const DEFAULT_AI_MODEL = "claude-haiku-4-5";
 const SEND_ATTACH_B64_CAP = 20_000_000;
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -139,15 +142,19 @@ async function polishWithClaude(
     context.length > 0
       ? `Conversation so far (oldest first):\n${context.map((m) => `${m.from}: ${m.text.slice(0, 600)}`).join("\n---\n")}\n\n`
       : "";
+  const model = account.ai_model || DEFAULT_AI_MODEL;
+  // Two params are Opus 5-class only: the server-side refusal fallback
+  // (those models' safety classifiers can rarely decline, retried on the
+  // recommended fallback model within the same call) and the effort knob,
+  // which Haiku rejects with a 400.
+  const opusClass = /^claude-(opus-5|fable-5|mythos-5)/.test(model);
   const response = await client.beta.messages.create({
-    model: account.ai_model || DEFAULT_AI_MODEL,
+    model,
     max_tokens: 16000,
-    // Server-side refusal fallback (per current Anthropic guidance for
-    // Opus 5-class models): rare safety declines retry on the recommended
-    // fallback model within the same call.
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { effort: "low", format: { type: "json_schema", schema: POLISH_SCHEMA } },
+    ...(opusClass ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" } : {}),
+    output_config: opusClass
+      ? { effort: "low", format: { type: "json_schema", schema: POLISH_SCHEMA } }
+      : { format: { type: "json_schema", schema: POLISH_SCHEMA } },
     system: polishSystemPrompt(account, recipientFirstName, isNew),
     messages: [
       {

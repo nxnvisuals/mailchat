@@ -49,6 +49,8 @@ Works with **Gmail** (3-minute setup with an app password) and
 3. **(Optional) AI polish.** In Mail settings, paste an Anthropic API key
    (console.anthropic.com → API keys). Your one-line notes then come back as
    complete professional emails — you still approve before anything sends.
+   Drafting runs on Claude Haiku, Anthropic's fastest and cheapest model,
+   so each draft costs a fraction of a cent.
    Without a key, replies are framed with a greeting and your signature
    instead.
 
