@@ -35,7 +35,9 @@ Works with **Gmail** (3-minute setup with an app password) and
 ## Using it
 
 1. Open the live app and **create your account** (the owner's email,
-   `nxnvisuals@gmail.com`, is already on the allowed list).
+   `nxnvisuals@gmail.com`, is already on the allowed list). Accounts work
+   the moment they're created — there is no email-confirmation step, since
+   the allowlist is what actually gates access (`migrations/0003`).
 2. **Connect a mailbox.** The app walks you through it:
    - *Gmail*: turn on 2-Step Verification → create an App Password at
      myaccount.google.com/apppasswords → paste it. Your real password is

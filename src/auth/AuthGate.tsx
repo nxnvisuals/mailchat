@@ -27,10 +27,17 @@ export default function AuthGate() {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw new Error(error.message);
         if (!data.session) {
-          toast({
-            title: "Almost there",
-            description: "Check your email for a confirmation link, then sign in.",
-          });
+          // Accounts are confirmed at creation (migrations/0003), but signup
+          // only returns a session once the project's "Confirm email" toggle
+          // is off — sign in explicitly so the first visit lands in the app.
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) {
+            toast({
+              title: "Account created",
+              description: "Sign in with your email and password to continue.",
+            });
+            setMode("signin");
+          }
         }
       }
     } catch (err) {
