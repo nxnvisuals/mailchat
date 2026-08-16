@@ -16,9 +16,15 @@
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { extractBearer, isDeviceToken, sha256Hex, RATE_LIMIT_PER_MINUTE } from "./tokens.ts";
+import { extractBearer, extractDeviceToken, sha256Hex, RATE_LIMIT_PER_MINUTE } from "./tokens.ts";
 
-export { generateToken, sha256Hex, isDeviceToken, RATE_LIMIT_PER_MINUTE } from "./tokens.ts";
+export {
+  generateToken,
+  sha256Hex,
+  isDeviceToken,
+  TOKEN_HEADER,
+  RATE_LIMIT_PER_MINUTE,
+} from "./tokens.ts";
 
 export type Db = SupabaseClient<any, any, any, any, any>;
 
@@ -89,19 +95,25 @@ async function authenticateSession(
   return { userId: user.id, via: "session" };
 }
 
-/** Resolve the caller to a user id, by whichever door they used. */
+/**
+ * Resolve the caller to a user id, by whichever door they used.
+ *
+ * A device token is checked first: it arrives in its own header, so a surface
+ * presenting one is unambiguous. Only if there is no device token do we treat
+ * Authorization as a browser session.
+ */
 export async function authenticate(
   req: Request,
   admin: Db,
   supabaseUrl: string,
   supabaseAnon: string,
 ): Promise<Caller> {
+  const deviceToken = extractDeviceToken(req.headers);
+  if (deviceToken) return await authenticateToken(admin, deviceToken);
+
   const authHeader = req.headers.get("Authorization");
-  const bearer = extractBearer(authHeader);
-  if (!bearer) throw new AuthError("Sign in to use the composer.");
-  return isDeviceToken(bearer)
-    ? await authenticateToken(admin, bearer)
-    : await authenticateSession(supabaseUrl, supabaseAnon, authHeader!);
+  if (!extractBearer(authHeader)) throw new AuthError("Sign in to use the composer.");
+  return await authenticateSession(supabaseUrl, supabaseAnon, authHeader!);
 }
 
 /**

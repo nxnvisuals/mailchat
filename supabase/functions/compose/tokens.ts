@@ -36,9 +36,34 @@ export function isDeviceToken(bearer: string): boolean {
   return bearer.startsWith(TOKEN_PREFIX);
 }
 
-/** Bearer extraction, shared by both auth paths. */
+/**
+ * Header a device surface uses to present its token.
+ *
+ * Device tokens deliberately do NOT ride in Authorization. Supabase's gateway
+ * inspects that header, and handing it a non-JWT invites the request to be
+ * rejected upstream before the function ever runs. A dedicated header keeps
+ * the two credential types on separate rails.
+ */
+export const TOKEN_HEADER = "x-mailchat-token";
+
+/** Bearer extraction for the browser-session path. */
 export function extractBearer(authHeader: string | null): string | null {
   if (!authHeader?.startsWith("Bearer ")) return null;
   const bearer = authHeader.slice("Bearer ".length).trim();
   return bearer || null;
+}
+
+/**
+ * Pull a device token from a request's headers.
+ *
+ * Prefers the dedicated header, but still accepts `Authorization: Bearer mc_…`
+ * so a caller that only knows how to set Authorization keeps working.
+ */
+export function extractDeviceToken(headers: {
+  get(name: string): string | null;
+}): string | null {
+  const direct = headers.get(TOKEN_HEADER)?.trim();
+  if (direct) return direct;
+  const bearer = extractBearer(headers.get("Authorization"));
+  return bearer && isDeviceToken(bearer) ? bearer : null;
 }

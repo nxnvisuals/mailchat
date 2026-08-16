@@ -26,11 +26,19 @@ import {
 } from "../../supabase/functions/compose/prompt.ts";
 import {
   extractBearer,
+  extractDeviceToken,
   generateToken,
   isDeviceToken,
   sha256Hex,
+  TOKEN_HEADER,
   TOKEN_PREFIX,
 } from "../../supabase/functions/compose/tokens.ts";
+
+/** Minimal stand-in for the Headers of an incoming request. */
+function headers(map: Record<string, string>) {
+  const lower = Object.fromEntries(Object.entries(map).map(([k, v]) => [k.toLowerCase(), v]));
+  return { get: (name: string) => lower[name.toLowerCase()] ?? null };
+}
 
 const baseProfile: PolishProfile = {
   displayName: "Ana Ruiz",
@@ -286,5 +294,38 @@ describe("extractBearer", () => {
     expect(extractBearer("Basic abc")).toBeNull();
     expect(extractBearer("Bearer")).toBeNull();
     expect(extractBearer("Bearer    ")).toBeNull();
+  });
+});
+
+describe("extractDeviceToken", () => {
+  it("reads the dedicated header", () => {
+    // Device tokens ride here rather than in Authorization, which the Supabase
+    // gateway inspects and would reject as a malformed JWT.
+    expect(extractDeviceToken(headers({ [TOKEN_HEADER]: "mc_abc" }))).toBe("mc_abc");
+  });
+
+  it("is case-insensitive about the header name", () => {
+    expect(extractDeviceToken(headers({ "X-MailChat-Token": "mc_abc" }))).toBe("mc_abc");
+  });
+
+  it("still accepts a device token in Authorization", () => {
+    expect(extractDeviceToken(headers({ Authorization: "Bearer mc_abc" }))).toBe("mc_abc");
+  });
+
+  it("does not mistake a session JWT for a device token", () => {
+    // Otherwise a signed-in browser request would be routed down the token
+    // path and rejected, locking the web app out of its own composer.
+    const jwt = "eyJhbGciOiJIUzI1NiJ9.payload.signature";
+    expect(extractDeviceToken(headers({ Authorization: `Bearer ${jwt}` }))).toBeNull();
+  });
+
+  it("prefers the dedicated header when both are present", () => {
+    const both = headers({ [TOKEN_HEADER]: "mc_from_header", Authorization: "Bearer mc_from_auth" });
+    expect(extractDeviceToken(both)).toBe("mc_from_header");
+  });
+
+  it("returns null when there is no credential at all", () => {
+    expect(extractDeviceToken(headers({}))).toBeNull();
+    expect(extractDeviceToken(headers({ [TOKEN_HEADER]: "   " }))).toBeNull();
   });
 });
