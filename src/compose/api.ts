@@ -1,4 +1,4 @@
-// MailChat ↔ compose edge function bridge.
+// Weaver ↔ compose edge function bridge.
 //
 // The composer half of the product: no mailbox required, no IMAP, no Graph.
 // Everything goes through supabase.functions.invoke("compose"), which forwards

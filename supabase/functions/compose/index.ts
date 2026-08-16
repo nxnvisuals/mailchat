@@ -1,11 +1,11 @@
-// compose — MailChat's composer as a service.
+// compose — Weaver's composer as a service.
 //
 // "Type one line, send a real email", available to any surface: the web app,
 // a Gmail add-on, a phone share target. Unlike the mailbox function this one
 // needs no connected mailbox, speaks no IMAP and reads no mail. It takes text
 // and a user's profile and returns a draft.
 //
-// Auth (see auth.ts): a Supabase session JWT, or a MailChat device token.
+// Auth (see auth.ts): a Supabase session JWT, or a Weaver device token.
 // The function is deployed with verify_jwt OFF so that device tokens can
 // reach it, which means the checks in this file are the only gate.
 //
@@ -37,7 +37,7 @@ import { DEFAULT_AI_MODEL, normalizeToneSamples } from "./prompt.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-mailchat-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-weaver-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const MAX_NOTE_CHARS = 8_000;
@@ -109,7 +109,7 @@ async function loadProfile(admin: Db, userId: string): Promise<ProfileRow> {
 function requireSession(caller: Caller): void {
   if (caller.via !== "session") {
     throw new AuthError(
-      "That action needs you signed in to MailChat in a browser — a device token can only write drafts.",
+      "That action needs you signed in to Weaver in a browser — a device token can only write drafts.",
       403,
     );
   }

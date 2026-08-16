@@ -1,4 +1,4 @@
-// mailbox — MailChat's API: your Gmail and Outlook mailboxes as chat-style
+// mailbox — Weaver's API: your Gmail and Outlook mailboxes as chat-style
 // conversations, with replies typed casually and sent as polished emails.
 //
 // Providers:

@@ -136,7 +136,7 @@ export default function ComposeSettings({ onClose }: { onClose: () => void }) {
               <div>
                 <h3 className="text-sm font-semibold">Sound like you</h3>
                 <p className="text-[11px] text-muted-foreground">
-                  Paste a few emails you've written. MailChat copies your manner — greetings, sign-offs,
+                  Paste a few emails you've written. Weaver copies your manner — greetings, sign-offs,
                   sentence length — never your content. Optional.
                 </p>
               </div>

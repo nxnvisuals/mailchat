@@ -5,7 +5,7 @@
 //
 //   1. The web app, presenting a normal Supabase session JWT.
 //   2. A device surface (Gmail add-on, phone share target) presenting a
-//      MailChat device token, which has no Supabase session behind it.
+//      Weaver device token, which has no Supabase session behind it.
 //
 // The platform gate being off means every check below is load-bearing. Both
 // paths resolve to a Supabase user id, and every downstream query is scoped by
@@ -62,7 +62,7 @@ async function authenticateToken(admin: Db, bearer: string): Promise<Caller> {
 
   if (!data) {
     throw new AuthError(
-      "That MailChat token isn't valid any more. Issue a new one in Composer settings.",
+      "That Weaver token isn't valid any more. Issue a new one in Composer settings.",
       403,
     );
   }

@@ -1,4 +1,4 @@
-// MailChat's own Supabase project ("MailChat" in the nxnvisuals org).
+// Weaver's own Supabase project ("Weaver" in the nxnvisuals org).
 // These are publishable values by design — real protection is Supabase auth
 // plus the mail_allowed_users allowlist enforced by the edge function.
 
@@ -8,7 +8,7 @@ export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_TAPz2OtIN1u1K2QEOFMV5w_U
 /**
  * Where this app is actually being served from.
  *
- * Derived at runtime rather than hardcoded, because MailChat now runs from two
+ * Derived at runtime rather than hardcoded, because Weaver now runs from two
  * places: Lovable's hosting and the `app` edge function. Microsoft requires the
  * OAuth redirect URI to match the address the user is really on, so pinning it
  * to one host silently breaks the Outlook connect flow on the other.

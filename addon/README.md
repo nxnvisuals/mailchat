@@ -1,4 +1,4 @@
-# MailChat for Gmail
+# Weaver for Gmail
 
 Type one line, send a real email — inside the Gmail you already use.
 
@@ -7,7 +7,7 @@ You open a Gmail compose window, jot the gist the way you'd write a text
 complete professional email lands in the draft. You review and send it
 yourself; nothing goes out on its own.
 
-## Why this exists rather than a MailChat inbox
+## Why this exists rather than a Weaver inbox
 
 Every product that tried to fix email by replacing the client has died,
 plateaued, or been absorbed — Mailbox, Google Inbox, and Superhuman between
@@ -23,7 +23,7 @@ The add-on requests three narrow scopes:
 |---|---|
 | `gmail.addons.execute` | Run at all — required of every Gmail add-on |
 | `gmail.addons.current.action.compose` | Write into the draft you have open |
-| `script.external_request` | Call the MailChat compose service |
+| `script.external_request` | Call the Weaver compose service |
 
 Draft access is set to `METADATA`, so the add-on sees **who you're writing to**
 and nothing else. It cannot read your inbox, your sent mail, your history, or
@@ -31,7 +31,7 @@ the body of anything you've received. Those are different scopes and this
 add-on does not ask for them.
 
 Your device token is stored in Apps Script user properties — inside your own
-Google account, not on MailChat's servers.
+Google account, not on Weaver's servers.
 
 ## Install
 
@@ -45,7 +45,7 @@ npm install -g @google/clasp
 clasp login
 
 cd addon
-clasp create --type standalone --title "MailChat"
+clasp create --type standalone --title "Weaver"
 clasp push
 ```
 
@@ -60,15 +60,15 @@ clasp push
 
 1. In the Apps Script editor: **Deploy** → **Test deployments**.
 2. Pick **Install**, then **Done**.
-3. Reload Gmail. MailChat appears in the right-hand add-on rail.
+3. Reload Gmail. Weaver appears in the right-hand add-on rail.
 
 A test deployment is private to your own account and needs no Google review.
 
 ## Connect it
 
-1. Open MailChat in a browser → **Composer settings** → **Create device token**.
-2. Copy the token — it starts with `mc_` and is shown once.
-3. In Gmail, open the MailChat add-on and paste it into **Device token** → **Connect**.
+1. Open Weaver in a browser → **Composer settings** → **Create device token**.
+2. Copy the token — it starts with `wv_` and is shown once.
+3. In Gmail, open the Weaver add-on and paste it into **Device token** → **Connect**.
 
 The token is verified immediately, so a bad paste fails there rather than
 halfway through writing an email. Revoke it any time from Composer settings;
@@ -77,7 +77,7 @@ the add-on stops working within seconds.
 ## Use it
 
 1. Compose a new email or hit reply.
-2. Open MailChat from the add-on rail → **Polish with MailChat**.
+2. Open Weaver from the add-on rail → **Polish with Weaver**.
 3. Type your note.
 4. Leave **Write a subject line too** ticked for a new email; untick it on a
    reply so Gmail's `Re:` survives.

@@ -3,7 +3,7 @@
 // Type the gist, get a real email back, hand it to whatever mail app you
 // actually use. No mailbox connection, no IMAP, no switching cost. This is the
 // surface that works on a phone, for Outlook users, and for anyone who shares
-// a message into MailChat from another app.
+// a message into Weaver from another app.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {

@@ -1,4 +1,4 @@
-// app — serves the built MailChat frontend straight from this Supabase
+// app — serves the built Weaver frontend straight from this Supabase
 // project, so the whole product lives in one place with zero extra hosting.
 //
 // The compiled frontend (gzip + base64, see scripts/build-lite.mjs) lives in

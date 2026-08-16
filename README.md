@@ -1,8 +1,8 @@
-# MailChat 💬
+# Weaver 💬
 
-Your email as simple conversations. MailChat turns messy email threads into
+Your email as simple conversations. Weaver turns messy email threads into
 a clean, text-message-style chat. You reply the way you'd text — short and
-casual — and MailChat turns it into a proper, professional email before it
+casual — and Weaver turns it into a proper, professional email before it
 sends (you always review and approve first). Attachments, search, unread
 filters and multiple mailboxes included.
 
@@ -15,7 +15,7 @@ Works with **Gmail** (3-minute setup with an app password) and
 
 ## How it works (the short version)
 
-- The whole product runs on one free Supabase project (`MailChat`,
+- The whole product runs on one free Supabase project (`Weaver`,
   ref `uyjpclffcyxcwidjmwxz`, $0/month):
   - **`app` edge function** – serves this repo's built frontend. The compiled
     files travel as a gzip+base64 payload stored in the `app_assets_parts`
@@ -69,7 +69,7 @@ Lovable project, with the `lovable-tagger` dev plugin wired in.
    **Publish** there the same way as with the salon site.
 3. No keys or settings to configure — the app already knows its backend.
    Accounts, connected mailboxes and settings are shared between the Lovable
-   copy and the Supabase-hosted copy; both talk to the same MailChat project.
+   copy and the Supabase-hosted copy; both talk to the same Weaver project.
 
 One Outlook note: Microsoft only sends sign-ins back to web addresses that
 are registered in the Entra app. The connect screen always shows the exact

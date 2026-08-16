@@ -9,8 +9,8 @@
 
 import { APP_URL } from "@/lib/config";
 
-const PENDING_KEY = "mailchat.outlook.pending";
-const CALLBACK_KEY = "mailchat.outlook.callback";
+const PENDING_KEY = "weaver.outlook.pending";
+const CALLBACK_KEY = "weaver.outlook.callback";
 
 export interface OutlookPending {
   clientId: string;

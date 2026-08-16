@@ -3,7 +3,7 @@
 // Dependency-free (Web Crypto only), so it runs under vitest as well as Deno.
 // auth.ts wraps this with the database lookups.
 
-export const TOKEN_PREFIX = "mc_";
+export const TOKEN_PREFIX = "wv_";
 
 /** Requests per user per minute, across both auth paths. */
 export const RATE_LIMIT_PER_MINUTE = 20;
@@ -44,7 +44,7 @@ export function isDeviceToken(bearer: string): boolean {
  * rejected upstream before the function ever runs. A dedicated header keeps
  * the two credential types on separate rails.
  */
-export const TOKEN_HEADER = "x-mailchat-token";
+export const TOKEN_HEADER = "x-weaver-token";
 
 /** Bearer extraction for the browser-session path. */
 export function extractBearer(authHeader: string | null): string | null {
@@ -56,7 +56,7 @@ export function extractBearer(authHeader: string | null): string | null {
 /**
  * Pull a device token from a request's headers.
  *
- * Prefers the dedicated header, but still accepts `Authorization: Bearer mc_…`
+ * Prefers the dedicated header, but still accepts `Authorization: Bearer wv_…`
  * so a caller that only knows how to set Authorization keeps working.
  */
 export function extractDeviceToken(headers: {

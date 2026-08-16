@@ -1,4 +1,4 @@
-// MailChat ↔ mailbox edge function bridge.
+// Weaver ↔ mailbox edge function bridge.
 //
 // Every call goes through supabase.functions.invoke("mailbox"), which
 // forwards the signed-in user's JWT automatically. The edge function talks

@@ -1,5 +1,5 @@
 /**
- * MailChat for Gmail — type one line, send a real email.
+ * Weaver for Gmail — type one line, send a real email.
  *
  * This is the whole pivot in one file. Instead of asking anyone to leave
  * Gmail for a different email client, the composer shows up inside the Gmail
@@ -9,20 +9,20 @@
  * Nothing here reads your mail. The add-on requests draft METADATA only — the
  * recipients, so it can greet them by name — and never asks for access to
  * your inbox, your history, or the body of anything you've received. The
- * heavy lifting happens in MailChat's `compose` edge function; this file is
+ * heavy lifting happens in Weaver's `compose` edge function; this file is
  * a text box, a button, and an HTTP call.
  */
 
 // ── Configuration ──────────────────────────────────────────────────────────
-// Point this at your own MailChat project if you are self-hosting.
+// Point this at your own Weaver project if you are self-hosting.
 var COMPOSE_ENDPOINT = 'https://uyjpclffcyxcwidjmwxz.supabase.co/functions/v1/compose';
 
 // Device tokens travel in their own header rather than Authorization, which
 // the Supabase gateway inspects and would reject as a malformed JWT.
-var TOKEN_HEADER = 'X-MailChat-Token';
+var TOKEN_HEADER = 'X-Weaver-Token';
 
-var TOKEN_PROPERTY = 'mailchat_token';
-var REQUEST_TIMEOUT_NOTE = 'MailChat took too long to answer. Try again in a moment.';
+var TOKEN_PROPERTY = 'weaver_token';
+var REQUEST_TIMEOUT_NOTE = 'Weaver took too long to answer. Try again in a moment.';
 
 // ── Token storage ──────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ function onHomepage() {
 /** Shown when the add-on is opened from inside a Gmail compose window. */
 function onComposeAction(e) {
   if (!getToken()) {
-    return buildSetupCard('Connect MailChat once, then you can polish from any draft.');
+    return buildSetupCard('Connect Weaver once, then you can polish from any draft.');
   }
   return buildComposeCard(e, '');
 }
@@ -64,7 +64,7 @@ function buildSetupCard(message) {
 
   section.addWidget(
     CardService.newTextParagraph().setText(
-      'Open MailChat in your browser, go to <b>Composer settings</b>, and create a device token. ' +
+      'Open Weaver in your browser, go to <b>Composer settings</b>, and create a device token. ' +
         'Paste it below — it is stored only in your own Google account.'
     )
   );
@@ -73,7 +73,7 @@ function buildSetupCard(message) {
     CardService.newTextInput()
       .setFieldName('token')
       .setTitle('Device token')
-      .setHint('Starts with mc_')
+      .setHint('Starts with wv_')
   );
 
   section.addWidget(
@@ -84,7 +84,7 @@ function buildSetupCard(message) {
   );
 
   return CardService.newCardBuilder()
-    .setHeader(CardService.newCardHeader().setTitle('Connect MailChat'))
+    .setHeader(CardService.newCardHeader().setTitle('Connect Weaver'))
     .addSection(section)
     .build();
 }
@@ -94,8 +94,8 @@ function buildStatusCard() {
 
   section.addWidget(
     CardService.newTextParagraph().setText(
-      'MailChat is connected. Open a Gmail compose window and choose ' +
-        '<b>Polish with MailChat</b> to turn a quick note into a full email.'
+      'Weaver is connected. Open a Gmail compose window and choose ' +
+        '<b>Polish with Weaver</b> to turn a quick note into a full email.'
     )
   );
 
@@ -106,7 +106,7 @@ function buildStatusCard() {
   );
 
   return CardService.newCardBuilder()
-    .setHeader(CardService.newCardHeader().setTitle('MailChat'))
+    .setHeader(CardService.newCardHeader().setTitle('Weaver'))
     .addSection(section)
     .build();
 }
@@ -119,8 +119,8 @@ function buildComposeCard(e, prefill) {
   section.addWidget(
     CardService.newTextParagraph().setText(
       recipient
-        ? 'Writing to <b>' + escapeHtml(recipient) + '</b>. Jot the gist — MailChat writes the email.'
-        : 'Jot the gist — MailChat writes the email.'
+        ? 'Writing to <b>' + escapeHtml(recipient) + '</b>. Jot the gist — Weaver writes the email.'
+        : 'Jot the gist — Weaver writes the email.'
     )
   );
 
@@ -148,7 +148,7 @@ function buildComposeCard(e, prefill) {
   );
 
   return CardService.newCardBuilder()
-    .setHeader(CardService.newCardHeader().setTitle('Polish with MailChat'))
+    .setHeader(CardService.newCardHeader().setTitle('Polish with Weaver'))
     .addSection(section)
     .build();
 }
@@ -161,8 +161,8 @@ function handleSaveToken(e) {
   if (!token) {
     return notify('Paste your device token first.');
   }
-  if (token.indexOf('mc_') !== 0) {
-    return notify("That doesn't look like a MailChat token — they start with mc_.");
+  if (token.indexOf('wv_') !== 0) {
+    return notify("That doesn't look like a Weaver token — they start with wv_.");
   }
 
   setToken(token);
@@ -175,7 +175,7 @@ function handleSaveToken(e) {
   }
 
   return CardService.newActionResponseBuilder()
-    .setNotification(CardService.newNotification().setText('MailChat connected.'))
+    .setNotification(CardService.newNotification().setText('Weaver connected.'))
     .setNavigation(CardService.newNavigation().updateCard(buildStatusCard()))
     .build();
 }
@@ -183,7 +183,7 @@ function handleSaveToken(e) {
 function handleClearToken() {
   clearToken();
   return CardService.newActionResponseBuilder()
-    .setNotification(CardService.newNotification().setText('MailChat disconnected.'))
+    .setNotification(CardService.newNotification().setText('Weaver disconnected.'))
     .setNavigation(CardService.newNavigation().updateCard(buildSetupCard('')))
     .build();
 }
@@ -226,7 +226,7 @@ function handlePolish(e) {
   return builder.build();
 }
 
-// ── MailChat API ───────────────────────────────────────────────────────────
+// ── Weaver API ───────────────────────────────────────────────────────────
 
 /**
  * Call the compose service. Returns either the draft or a { error } object —
@@ -236,7 +236,7 @@ function handlePolish(e) {
 function callCompose(payload) {
   var token = getToken();
   if (!token) {
-    return { error: 'Connect MailChat first.' };
+    return { error: 'Connect Weaver first.' };
   }
 
   var headers = {};
@@ -260,20 +260,20 @@ function callCompose(payload) {
   try {
     body = JSON.parse(response.getContentText() || '{}');
   } catch (err) {
-    return { error: 'MailChat sent back something unreadable. Try again.' };
+    return { error: 'Weaver sent back something unreadable. Try again.' };
   }
 
   if (code === 429) {
     return { error: body.error || 'Slow down a moment and try again.' };
   }
   if (code === 401 || code === 403) {
-    return { error: body.error || 'That token is no longer valid. Reconnect MailChat.' };
+    return { error: body.error || 'That token is no longer valid. Reconnect Weaver.' };
   }
   if (code >= 400) {
-    return { error: body.error || 'MailChat could not write that one.' };
+    return { error: body.error || 'Weaver could not write that one.' };
   }
   if (!body.body) {
-    return { error: 'MailChat returned an empty draft.' };
+    return { error: 'Weaver returned an empty draft.' };
   }
 
   return body;

@@ -253,7 +253,7 @@ describe("device tokens", () => {
 
   it("produces URL-safe output", () => {
     for (let i = 0; i < 50; i++) {
-      expect(generateToken()).toMatch(/^mc_[A-Za-z0-9_-]+$/);
+      expect(generateToken()).toMatch(/^wv_[A-Za-z0-9_-]+$/);
     }
   });
 
@@ -285,7 +285,7 @@ describe("sha256Hex", () => {
 
 describe("extractBearer", () => {
   it("pulls the credential out of a well-formed header", () => {
-    expect(extractBearer("Bearer mc_abc123")).toBe("mc_abc123");
+    expect(extractBearer("Bearer wv_abc123")).toBe("wv_abc123");
   });
 
   it("rejects anything that isn't a bearer header", () => {
@@ -301,15 +301,15 @@ describe("extractDeviceToken", () => {
   it("reads the dedicated header", () => {
     // Device tokens ride here rather than in Authorization, which the Supabase
     // gateway inspects and would reject as a malformed JWT.
-    expect(extractDeviceToken(headers({ [TOKEN_HEADER]: "mc_abc" }))).toBe("mc_abc");
+    expect(extractDeviceToken(headers({ [TOKEN_HEADER]: "wv_abc" }))).toBe("wv_abc");
   });
 
   it("is case-insensitive about the header name", () => {
-    expect(extractDeviceToken(headers({ "X-MailChat-Token": "mc_abc" }))).toBe("mc_abc");
+    expect(extractDeviceToken(headers({ "X-Weaver-Token": "wv_abc" }))).toBe("wv_abc");
   });
 
   it("still accepts a device token in Authorization", () => {
-    expect(extractDeviceToken(headers({ Authorization: "Bearer mc_abc" }))).toBe("mc_abc");
+    expect(extractDeviceToken(headers({ Authorization: "Bearer wv_abc" }))).toBe("wv_abc");
   });
 
   it("does not mistake a session JWT for a device token", () => {
@@ -320,8 +320,8 @@ describe("extractDeviceToken", () => {
   });
 
   it("prefers the dedicated header when both are present", () => {
-    const both = headers({ [TOKEN_HEADER]: "mc_from_header", Authorization: "Bearer mc_from_auth" });
-    expect(extractDeviceToken(both)).toBe("mc_from_header");
+    const both = headers({ [TOKEN_HEADER]: "wv_from_header", Authorization: "Bearer wv_from_auth" });
+    expect(extractDeviceToken(both)).toBe("wv_from_header");
   });
 
   it("returns null when there is no credential at all", () => {

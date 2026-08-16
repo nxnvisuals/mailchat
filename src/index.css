@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* MailChat palette — calm indigo on warm paper. */
+/* Weaver palette — calm indigo on warm paper. */
 :root {
   --background: 40 30% 97%;
   --foreground: 235 20% 15%;

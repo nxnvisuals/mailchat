@@ -81,7 +81,7 @@ export default function MailShell({ session }: { session: Session }) {
           <ShieldAlert className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-1">This app is private</h1>
           <p className="text-sm text-muted-foreground mb-4">
-            You're signed in as <strong>{session.user.email}</strong>, but that login isn't on MailChat's allowed list.
+            You're signed in as <strong>{session.user.email}</strong>, but that login isn't on Weaver's allowed list.
             The owner can add it in the Supabase table <code>mail_allowed_users</code>.
           </p>
           <button onClick={signOut} className="btn-ghost text-xs py-2 px-4">
@@ -113,7 +113,7 @@ export default function MailShell({ session }: { session: Session }) {
             <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <MessagesSquare className="w-4.5 h-4.5" />
             </div>
-            <span className="font-semibold">MailChat</span>
+            <span className="font-semibold">Weaver</span>
           </div>
           <button onClick={signOut} title="Sign out" aria-label="Sign out" className="p-2 rounded-lg hover:bg-muted">
             <LogOut className="w-4 h-4 text-muted-foreground" />
@@ -206,7 +206,7 @@ function MailApp({
               <MessagesSquare className="w-4 h-4" />
             </div>
             <div className="text-left min-w-0">
-              <p className="text-sm font-semibold leading-tight">MailChat</p>
+              <p className="text-sm font-semibold leading-tight">Weaver</p>
               <p className="text-[11px] text-muted-foreground truncate leading-tight">
                 {account.email} <span className="capitalize">({account.provider})</span>
               </p>

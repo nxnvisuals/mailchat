@@ -1,6 +1,6 @@
 {
-  "name": "MailChat Composer",
-  "short_name": "MailChat",
+  "name": "Weaver Composer",
+  "short_name": "Weaver",
   "description": "Type one line, send a real email.",
   "start_url": "./",
   "scope": "./",

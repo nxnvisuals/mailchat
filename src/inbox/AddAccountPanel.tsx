@@ -133,7 +133,7 @@ export default function AddAccountPanel({ firstRun, onClose, onAccounts }: AddAc
           <Step icon={KeyRound} title="Step 2 — Create an App Password">
             <p className="text-muted-foreground">
               Go to <ALink href="https://myaccount.google.com/apppasswords">myaccount.google.com/apppasswords</ALink>,
-              type a name like <strong>MailChat</strong>, and press Create. Google shows a <strong>16-letter code</strong>{" "}
+              type a name like <strong>Weaver</strong>, and press Create. Google shows a <strong>16-letter code</strong>{" "}
               — copy it. (Your real Google password is never used or stored, and you can cancel the code from that same
               page any time.)
             </p>
@@ -181,7 +181,7 @@ export default function AddAccountPanel({ firstRun, onClose, onAccounts }: AddAc
                 then search for <strong>App registrations</strong> → <strong>New registration</strong>:
               </p>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Name: <strong>MailChat</strong></li>
+                <li>Name: <strong>Weaver</strong></li>
                 <li>
                   Supported account types: <strong>"Accounts in any organizational directory and personal Microsoft
                   accounts"</strong>
@@ -220,7 +220,7 @@ export default function AddAccountPanel({ firstRun, onClose, onAccounts }: AddAc
                 {redirecting ? "Taking you to Microsoft…" : "Sign in with Microsoft"}
               </button>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                You'll approve MailChat reading and sending your mail, then land right back here. The connection stays
+                You'll approve Weaver reading and sending your mail, then land right back here. The connection stays
                 good as long as you use the app now and then; you can revoke it any time at{" "}
                 <ALink href="https://account.live.com/consent/Manage">account.live.com/consent/Manage</ALink>.
               </p>

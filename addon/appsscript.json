@@ -9,7 +9,7 @@
   ],
   "addOns": {
     "common": {
-      "name": "MailChat",
+      "name": "Weaver",
       "logoUrl": "https://www.gstatic.com/images/icons/material/system/2x/edit_note_black_24dp.png",
       "useLocaleFromApp": true,
       "homepageTrigger": {
@@ -21,7 +21,7 @@
       "composeTrigger": {
         "selectActions": [
           {
-            "text": "Polish with MailChat",
+            "text": "Polish with Weaver",
             "runFunction": "onComposeAction"
           }
         ],

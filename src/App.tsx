@@ -7,7 +7,7 @@
 //   Inbox    — the original chat-style mail client, for connected mailboxes.
 //
 // Microsoft's sign-in redirects back here with ?code=…&state=…. That can
-// arrive before the user's MailChat session is restored, so the callback is
+// arrive before the user's Weaver session is restored, so the callback is
 // stashed immediately on load (and stripped from the URL), then completed by
 // MailShell once the user is signed in.
 

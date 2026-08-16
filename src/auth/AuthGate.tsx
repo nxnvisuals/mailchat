@@ -1,4 +1,4 @@
-// AuthGate — email + password sign in / sign up for MailChat itself.
+// AuthGate — email + password sign in / sign up for Weaver itself.
 //
 // Anyone can create a login, but the mail backend only answers accounts on
 // its allowlist (mail_allowed_users), so a stranger who signs up sees a
@@ -54,7 +54,7 @@ export default function AuthGate() {
           <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
             <MessagesSquare className="w-5 h-5" />
           </div>
-          <h1 className="text-xl font-semibold">MailChat</h1>
+          <h1 className="text-xl font-semibold">Weaver</h1>
         </div>
         <p className="text-sm text-muted-foreground mb-5">
           Your email as simple conversations. Sign {mode === "signin" ? "in" : "up"} to continue.
