@@ -22,7 +22,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@^0.110.0";
 
 import { gmailProvider, verifyGmailLogin, ImapError, SmtpError } from "./gmail.ts";
 import { outlookProvider, exchangeOutlookCode, type TokenSaver } from "./outlook.ts";
-import { MailError, type MailAccount, type MailProvider } from "./types.ts";
+import { MailError, type MailAccount, type MailFolder, type MailProvider } from "./types.ts";
 import { isValidEmail, type OutAddress, type OutAttachment } from "./mimeBuild.ts";
 
 type Db = SupabaseClient<any, any, any, any, any>;
@@ -37,6 +37,8 @@ const corsHeaders = {
 // and it's the fastest and cheapest current Claude model — keeps the
 // owner's API bill near zero. Accounts can still override ai_model.
 const DEFAULT_AI_MODEL = "claude-haiku-4-5";
+
+const MAIL_FOLDERS = ["inbox", "unread", "starred", "sent", "drafts", "archive"] as const;
 const SEND_ATTACH_B64_CAP = 20_000_000;
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -344,8 +346,13 @@ Deno.serve(async (req) => {
       case "threads": {
         const account = await loadAccount(admin, payload.accountId);
         const q = String(payload.q ?? "").trim();
-        const filter = String(payload.filter ?? "inbox") === "unread" ? "unread" : "inbox";
-        const result = await providerFor(admin, account).listThreads(q, filter);
+        // Allow-list rather than a cast: an unknown value falls back to the
+        // inbox instead of reaching a provider as an arbitrary folder name.
+        const requested = String(payload.filter ?? payload.folder ?? "inbox");
+        const folder: MailFolder = (MAIL_FOLDERS as readonly string[]).includes(requested)
+          ? (requested as MailFolder)
+          : "inbox";
+        const result = await providerFor(admin, account).listThreads(q, folder);
         return jsonResponse(result);
       }
 

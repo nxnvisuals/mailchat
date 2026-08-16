@@ -2,19 +2,19 @@
 // one row per conversation with sender, subject, snippet and unread dot.
 
 import { Loader2, Paperclip, RefreshCw, Search } from "lucide-react";
-import { formatThreadDate, type ThreadSummary } from "./api";
+import { formatThreadDate, type MailFolder, type ThreadSummary } from "./api";
 
 interface ThreadListProps {
   threads: ThreadSummary[];
   loading: boolean;
   selectedId: string | null;
   q: string;
-  filter: "inbox" | "unread";
+  filter: MailFolder;
   searching: boolean;
   onSelect: (threadId: string) => void;
   onSetQ: (q: string) => void;
   onSearch: () => void;
-  onSetFilter: (f: "inbox" | "unread") => void;
+  onSetFilter: (f: MailFolder) => void;
   onRefresh: () => void;
 }
 

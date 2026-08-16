@@ -8,6 +8,18 @@ import { supabase } from "@/lib/supabase";
 
 export type Provider = "gmail" | "outlook";
 
+/**
+ * A list the user can ask for. Mirrors MailFolder in the edge function.
+ *
+ * "unread" is a view of the inbox rather than a folder of its own, and
+ * "archive" differs per provider — Gmail has no archive folder, so it means
+ * All Mail minus the inbox; Outlook has a real one.
+ */
+export type MailFolder = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive";
+
+/** Folders holding mail the user wrote, where the useful column is "to". */
+export const OUTGOING_FOLDERS: readonly MailFolder[] = ["sent", "drafts"];
+
 export interface MailAccountSummary {
   id: string;
   provider: Provider;
@@ -135,7 +147,7 @@ export const mailboxApi = {
 
   disconnect: (accountId: string) => call<{ accounts: MailAccountSummary[] }>({ action: "disconnect", accountId }),
 
-  listThreads: (accountId: string, q: string, filter: "inbox" | "unread") =>
+  listThreads: (accountId: string, q: string, filter: MailFolder) =>
     call<{ threads: ThreadSummary[]; scannedAll: boolean }>({ action: "threads", accountId, q, filter }),
 
   getThread: (accountId: string, threadId: string, markRead = true) =>

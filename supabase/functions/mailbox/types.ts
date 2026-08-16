@@ -6,6 +6,18 @@
 import type { MailAddress } from "./imapParse.ts";
 import type { OutAddress, OutAttachment } from "./mimeBuild.ts";
 
+/**
+ * A list the user can ask for.
+ *
+ * "unread" is a view of the inbox rather than a folder of its own, and
+ * "archive" means different things per provider — Gmail has no archive folder,
+ * so it is All Mail minus the inbox; Outlook has a real Archive folder.
+ */
+export type MailFolder = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive";
+
+/** Folders that hold mail the user wrote, where "from" is themselves. */
+export const OUTGOING_FOLDERS: ReadonlySet<MailFolder> = new Set(["sent", "drafts"]);
+
 export class MailError extends Error {
   constructor(message: string, public readonly kind: "auth" | "protocol" | "network" = "protocol") {
     super(message);
@@ -98,7 +110,7 @@ export interface AttachmentContent {
 }
 
 export interface MailProvider {
-  listThreads(q: string, filter: "inbox" | "unread"): Promise<{ threads: ThreadSummary[]; scannedAll: boolean }>;
+  listThreads(q: string, folder: MailFolder): Promise<{ threads: ThreadSummary[]; scannedAll: boolean }>;
   getThread(threadId: string, markRead: boolean): Promise<ThreadDetail>;
   getAttachment(messageId: string, partId: string): Promise<AttachmentContent>;
   send(args: SendArgs): Promise<void>;

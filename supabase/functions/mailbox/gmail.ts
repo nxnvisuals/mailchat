@@ -129,15 +129,35 @@ async function openImap(account: MailAccount): Promise<ImapClient> {
 
 export function gmailProvider(account: MailAccount): MailProvider {
   return {
-    async listThreads(q, filter) {
+    async listThreads(q, folder) {
       const imap = await openImap(account);
       try {
         let rows: ParsedFetchRow[] = [];
         const items = "UID X-GM-THRID FLAGS INTERNALDATE ENVELOPE BODYSTRUCTURE";
+
+        // Which mailbox answers this request, and whether it needs a search.
+        //
+        // Gmail has no Archive folder — archiving only removes the Inbox
+        // label — so "archive" is All Mail with the inbox excluded, which
+        // needs X-GM-RAW rather than a plain SELECT.
+        let mailbox = "INBOX";
+        let rawSearch: string | null = null;
         if (q) {
-          const { allMail } = await imap.findSpecialFolders();
-          await imap.select(allMail);
-          const uids = await imap.uidSearch(gmailRawQuery(q));
+          const special = await imap.findSpecialFolders();
+          mailbox = special.allMail;
+          rawSearch = gmailRawQuery(q);
+        } else if (folder === "sent" || folder === "drafts" || folder === "starred") {
+          const special = await imap.findSpecialFolders();
+          mailbox = folder === "sent" ? special.sent : folder === "drafts" ? special.drafts : special.starred;
+        } else if (folder === "archive") {
+          const special = await imap.findSpecialFolders();
+          mailbox = special.allMail;
+          rawSearch = gmailRawQuery("-in:inbox -in:trash -in:spam");
+        }
+
+        if (rawSearch !== null) {
+          await imap.select(mailbox);
+          const uids = await imap.uidSearch(rawSearch);
           const recent = uids.slice(-THREAD_LIST_SCAN);
           if (recent.length > 0) {
             rows = (await imap.fetch(recent.join(","), items, true))
@@ -145,7 +165,7 @@ export function gmailProvider(account: MailAccount): MailProvider {
               .filter((r): r is ParsedFetchRow => r !== null);
           }
         } else {
-          const { exists } = await imap.select("INBOX");
+          const { exists } = await imap.select(mailbox);
           if (exists > 0) {
             const from = Math.max(1, exists - THREAD_LIST_SCAN + 1);
             rows = (await imap.fetch(`${from}:${exists}`, items, false))
@@ -181,7 +201,7 @@ export function gmailProvider(account: MailAccount): MailProvider {
           };
         });
         threads.sort((a, b) => b.data.date.localeCompare(a.data.date));
-        if (filter === "unread") threads = threads.filter((t) => t.data.unread);
+        if (folder === "unread") threads = threads.filter((t) => t.data.unread);
         threads = threads.slice(0, THREAD_LIST_MAX);
 
         const snippetRows = threads

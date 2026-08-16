@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/lib/toast";
 import { composeApi, copyToClipboard, mailtoLink, sharedText, type ComposeDraft } from "./api";
 import ComposeSettings from "./ComposeSettings";
+import Sidebar from "@/shell/Sidebar";
 
 export default function ComposePage({
   session,
@@ -100,41 +101,58 @@ export default function ComposePage({
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between gap-2 p-3 sm:p-4">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-            <Wand2 className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold leading-tight">Composer</p>
-            <p className="text-[11px] text-muted-foreground truncate leading-tight">{session.user.email}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button onClick={onOpenInbox} className="btn-ghost text-xs py-2 px-3" title="Open the mail inbox">
-            <Mail className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Inbox</span>
-          </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            title="Composer settings"
-            aria-label="Composer settings"
-            className="p-2 rounded-lg hover:bg-muted transition-colors"
-          >
-            <Settings className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <button
-            onClick={() => supabase.auth.signOut()}
-            title="Sign out"
-            aria-label="Sign out"
-            className="p-2 rounded-lg hover:bg-muted transition-colors"
-          >
-            <LogOut className="w-4 h-4 text-muted-foreground" />
-          </button>
-        </div>
-      </header>
+    <div className="h-screen flex overflow-hidden">
+      <Sidebar
+        active="composer"
+        email={session.user.email ?? ""}
+        onNavigate={(surface) => {
+          if (surface === "inbox") onOpenInbox();
+        }}
+        onOpenSettings={() => setShowSettings(true)}
+      />
 
-      <main className="flex-1 w-full max-w-2xl mx-auto px-3 sm:px-4 pb-8">
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        {/* On desktop the rail carries the wordmark, navigation and settings,
+            so the header keeps only what the rail doesn't. */}
+        <header className="flex items-center justify-between gap-2 p-3 sm:p-4">
+          <div className="flex items-center gap-2 min-w-0 md:hidden">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+              <Wand2 className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-tight">Weaver</p>
+              <p className="text-[11px] text-muted-foreground truncate leading-tight">{session.user.email}</p>
+            </div>
+          </div>
+          <div className="hidden md:block" />
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              onClick={onOpenInbox}
+              className="btn-ghost text-xs py-2 px-3 md:hidden"
+              title="Open the mail inbox"
+            >
+              <Mail className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Inbox</span>
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              title="Composer settings"
+              aria-label="Composer settings"
+              className="p-2 rounded-lg hover:bg-muted transition-colors md:hidden"
+            >
+              <Settings className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              title="Sign out"
+              aria-label="Sign out"
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              <LogOut className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 w-full max-w-2xl mx-auto px-3 sm:px-4 pb-8">
         {!draft ? (
           <div className="card p-4 sm:p-5 space-y-4">
             <div>
@@ -244,7 +262,8 @@ export default function ComposePage({
             </button>
           </div>
         )}
-      </main>
+        </main>
+      </div>
 
       {showSettings && <ComposeSettings onClose={() => setShowSettings(false)} />}
     </div>

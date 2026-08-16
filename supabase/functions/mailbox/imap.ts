@@ -16,6 +16,14 @@
 import { parseImapLine, asString, type ImapValue } from "./imapParse.ts";
 import { bytesToAscii } from "./mimeText.ts";
 
+/** Special-use mailboxes, resolved once per connection. */
+export interface SpecialFolders {
+  allMail: string;
+  sent: string;
+  drafts: string;
+  starred: string;
+}
+
 const IMAP_HOST = "imap.gmail.com";
 const IMAP_PORT = 993;
 const OP_TIMEOUT_MS = 30_000;
@@ -173,10 +181,12 @@ export class ImapClient {
   }
 
   /** Find Gmail's special folders regardless of account language. */
-  async findSpecialFolders(): Promise<{ allMail: string; sent: string | null }> {
+  async findSpecialFolders(): Promise<SpecialFolders> {
     const res = await this.command(`LIST "" "*" RETURN (SPECIAL-USE)`);
     let allMail: string | null = null;
     let sent: string | null = null;
+    let drafts: string | null = null;
+    let starred: string | null = null;
     for (const line of res.untagged) {
       // * LIST (\HasNoChildren \All) "/" "[Gmail]/All Mail"
       const values = parseImapLine(line.text.replace(/^\* LIST /i, ""), line.literals);
@@ -186,9 +196,17 @@ export class ImapClient {
       if (!name) continue;
       if (flags.includes("\\all")) allMail = name;
       if (flags.includes("\\sent")) sent = name;
+      if (flags.includes("\\drafts")) drafts = name;
+      // Gmail exposes Starred as the \Flagged special-use folder.
+      if (flags.includes("\\flagged")) starred = name;
     }
-    // English-account fallback keeps us working if SPECIAL-USE ever changes.
-    return { allMail: allMail ?? "[Gmail]/All Mail", sent };
+    // English-account fallbacks keep us working if SPECIAL-USE ever changes.
+    return {
+      allMail: allMail ?? "[Gmail]/All Mail",
+      sent: sent ?? "[Gmail]/Sent Mail",
+      drafts: drafts ?? "[Gmail]/Drafts",
+      starred: starred ?? "[Gmail]/Starred",
+    };
   }
 
   /** SELECT a mailbox read-write. Returns the EXISTS count. */

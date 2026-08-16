@@ -18,6 +18,8 @@ import { supabase } from "./lib/supabase";
 import AuthGate from "./auth/AuthGate";
 import MailShell from "./inbox/MailShell";
 import ComposePage from "./compose/ComposePage";
+import Sidebar, { type Surface } from "./shell/Sidebar";
+import type { MailFolder } from "./inbox/api";
 import { captureOutlookCallback } from "./inbox/outlookAuth";
 
 // Run before first render so the code never survives into the visible URL.
@@ -45,6 +47,9 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [route, setRoute] = useState<Route>(routeFromUrl);
+  const [folder, setFolder] = useState<MailFolder>("inbox");
+  // Bumped to ask MailShell to open its settings dialog from the rail.
+  const [settingsNonce, setSettingsNonce] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -83,22 +88,45 @@ export default function App() {
 
   if (!session) return <AuthGate />;
 
+  const navigate = (surface: Surface) => {
+    if (surface === "composer") {
+      go("composer");
+      return;
+    }
+    setFolder(surface);
+    if (route !== "inbox") go("inbox");
+  };
+
   if (route === "composer") {
     return <ComposePage session={session} onOpenInbox={() => go("inbox")} />;
   }
 
-  // The composer switch rides alongside MailShell rather than inside it, so
-  // the working inbox needs no changes to gain a second surface.
   return (
-    <>
-      <MailShell session={session} />
+    <div className="h-screen flex overflow-hidden">
+      <Sidebar
+        active={folder}
+        email={session.user.email ?? ""}
+        onNavigate={navigate}
+        onOpenSettings={() => setSettingsNonce((n) => n + 1)}
+      />
+      <div className="flex-1 min-w-0">
+        <MailShell
+          session={session}
+          folder={folder}
+          onSetFolder={setFolder}
+          onOpenComposer={() => go("composer")}
+          openSettingsNonce={settingsNonce}
+        />
+      </div>
+
+      {/* Phone: the rail is hidden, so the composer needs its own way in. */}
       <button
         onClick={() => go("composer")}
         title="Write an email from a quick note"
-        className="fixed bottom-4 right-4 z-30 btn shadow-lg py-3 px-4"
+        className="md:hidden fixed bottom-4 right-4 z-30 btn shadow-lg py-3 px-4"
       >
         <Wand2 className="w-4 h-4" /> Composer
       </button>
-    </>
+    </div>
   );
 }

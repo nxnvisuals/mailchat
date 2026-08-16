@@ -219,7 +219,7 @@ export function outlookProvider(account: MailAccount, saveTokens: TokenSaver): M
     "$select=id,conversationId,subject,from,toRecipients,receivedDateTime,isRead,hasAttachments,bodyPreview";
 
   return {
-    async listThreads(q, filter) {
+    async listThreads(q, folder) {
       let messages: GraphMessage[];
       if (q) {
         const query = q.replace(/["\\]/g, " ").trim();
@@ -227,9 +227,27 @@ export function outlookProvider(account: MailAccount, saveTokens: TokenSaver): M
           `/me/messages?$search="${encodeURIComponent(query)}"&$top=${LIST_TOP}&${messageSelect}`,
         );
         messages = res.value ?? [];
-      } else {
+      } else if (folder === "starred") {
+        // Outlook has no Starred folder; flagged messages live across all of
+        // them, so this is a filter over the mailbox rather than a folder read.
         const res = await graph.request<{ value: GraphMessage[] }>(
-          `/me/mailFolders/inbox/messages?$top=${LIST_TOP}&$orderby=receivedDateTime desc&${messageSelect}`,
+          `/me/messages?$filter=${encodeURIComponent("flag/flagStatus eq 'flagged'")}` +
+            `&$top=${LIST_TOP}&$orderby=receivedDateTime desc&${messageSelect}`,
+        );
+        messages = res.value ?? [];
+      } else {
+        // Graph well-known folder names. Unlike Gmail, Outlook has a real
+        // Archive folder, so this maps straight across.
+        const wellKnown =
+          folder === "sent"
+            ? "sentitems"
+            : folder === "drafts"
+              ? "drafts"
+              : folder === "archive"
+                ? "archive"
+                : "inbox";
+        const res = await graph.request<{ value: GraphMessage[] }>(
+          `/me/mailFolders/${wellKnown}/messages?$top=${LIST_TOP}&$orderby=receivedDateTime desc&${messageSelect}`,
         );
         messages = res.value ?? [];
       }
@@ -258,7 +276,7 @@ export function outlookProvider(account: MailAccount, saveTokens: TokenSaver): M
         };
       });
       threads.sort((a, b) => b.date.localeCompare(a.date));
-      if (filter === "unread") threads = threads.filter((t) => t.unread);
+      if (folder === "unread") threads = threads.filter((t) => t.unread);
       return { threads: threads.slice(0, THREAD_LIST_MAX), scannedAll: messages.length < LIST_TOP };
     },
 

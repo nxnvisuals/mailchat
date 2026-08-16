@@ -7,7 +7,13 @@ import { ChevronDown, Loader2, LogOut, MailPlus, MessagesSquare, Plus, RefreshCw
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/lib/toast";
-import { mailboxApi, NotAllowedError, type MailAccountSummary, type ThreadSummary } from "./api";
+import {
+  mailboxApi,
+  NotAllowedError,
+  type MailAccountSummary,
+  type MailFolder,
+  type ThreadSummary,
+} from "./api";
 import { takePendingConnection } from "./outlookAuth";
 import AddAccountPanel from "./AddAccountPanel";
 import ThreadList from "./ThreadList";
@@ -15,7 +21,21 @@ import ConversationView from "./ConversationView";
 import MailSettingsDialog from "./MailSettingsDialog";
 import NewMessageDialog from "./NewMessageDialog";
 
-export default function MailShell({ session }: { session: Session }) {
+export default function MailShell({
+  session,
+  folder = "inbox",
+  onSetFolder,
+  onOpenComposer,
+  openSettingsNonce = 0,
+}: {
+  session: Session;
+  /** Which list to show. Driven by the sidebar so the rail and the list agree. */
+  folder?: MailFolder;
+  onSetFolder?: (folder: MailFolder) => void;
+  onOpenComposer?: () => void;
+  /** Incremented by the sidebar to ask for the settings dialog. */
+  openSettingsNonce?: number;
+}) {
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<MailAccountSummary[] | null>(null);
   const [notAllowed, setNotAllowed] = useState(false);
@@ -130,6 +150,10 @@ export default function MailShell({ session }: { session: Session }) {
       key={active.id}
       account={active}
       accounts={accounts}
+      folder={folder}
+      onSetFolder={onSetFolder}
+      onOpenComposer={onOpenComposer}
+      openSettingsNonce={openSettingsNonce}
       onSwitch={setActiveId}
       onAddAccount={() => setShowAdd(true)}
       onAccounts={applyAccounts}
@@ -141,6 +165,10 @@ export default function MailShell({ session }: { session: Session }) {
 function MailApp({
   account,
   accounts,
+  folder,
+  onSetFolder,
+  onOpenComposer,
+  openSettingsNonce,
   onSwitch,
   onAddAccount,
   onAccounts,
@@ -148,6 +176,10 @@ function MailApp({
 }: {
   account: MailAccountSummary;
   accounts: MailAccountSummary[];
+  folder: MailFolder;
+  onSetFolder?: (folder: MailFolder) => void;
+  onOpenComposer?: () => void;
+  openSettingsNonce: number;
   onSwitch: (id: string) => void;
   onAddAccount: () => void;
   onAccounts: (a: MailAccountSummary[]) => void;
@@ -158,7 +190,6 @@ function MailApp({
   const [threadsLoading, setThreadsLoading] = useState(true);
   const [q, setQ] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
-  const [filter, setFilter] = useState<"inbox" | "unread">("inbox");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
@@ -166,7 +197,7 @@ function MailApp({
   const requestSeq = useRef(0);
 
   const loadThreads = useCallback(
-    async (query: string, f: "inbox" | "unread") => {
+    async (query: string, f: MailFolder) => {
       const seq = ++requestSeq.current;
       setThreadsLoading(true);
       try {
@@ -183,9 +214,15 @@ function MailApp({
     [account.id, toast],
   );
 
+  // The rail lives outside this component, so it asks for settings by bumping
+  // a counter. Skipping zero keeps the dialog shut on first render.
   useEffect(() => {
-    loadThreads(activeQuery, filter);
-  }, [loadThreads, activeQuery, filter]);
+    if (openSettingsNonce > 0) setShowSettings(true);
+  }, [openSettingsNonce]);
+
+  useEffect(() => {
+    loadThreads(activeQuery, folder);
+  }, [loadThreads, activeQuery, folder]);
 
   const markThreadRead = useCallback((threadId: string) => {
     setThreads((prev) => prev.map((t) => (t.threadId === threadId ? { ...t, unread: false } : t)));
@@ -268,13 +305,13 @@ function MailApp({
             loading={threadsLoading}
             selectedId={selectedId}
             q={q}
-            filter={filter}
+            filter={folder}
             searching={activeQuery !== ""}
             onSelect={setSelectedId}
             onSetQ={setQ}
             onSearch={() => setActiveQuery(q.trim())}
-            onSetFilter={setFilter}
-            onRefresh={() => loadThreads(activeQuery, filter)}
+            onSetFilter={(f) => onSetFolder?.(f)}
+            onRefresh={() => loadThreads(activeQuery, folder)}
           />
         </div>
         <div className={`${selectedId ? "flex" : "hidden md:flex"} flex-col flex-1 min-w-0 min-h-0`}>
@@ -298,7 +335,7 @@ function MailApp({
                 Your emails show up here as simple back-and-forth conversations. Reply like you'd text — it goes out as
                 a proper email.
               </p>
-              <button onClick={() => loadThreads(activeQuery, filter)} className="btn-ghost text-xs py-2 px-4 mt-2">
+              <button onClick={() => loadThreads(activeQuery, folder)} className="btn-ghost text-xs py-2 px-4 mt-2">
                 <RefreshCw className="w-3 h-3" /> Check for new mail
               </button>
             </div>
@@ -315,7 +352,7 @@ function MailApp({
           provider={account.provider}
           aiEnabled={account.aiEnabled}
           onClose={() => setShowNewMessage(false)}
-          onSent={() => loadThreads(activeQuery, filter)}
+          onSent={() => loadThreads(activeQuery, folder)}
         />
       )}
     </div>
