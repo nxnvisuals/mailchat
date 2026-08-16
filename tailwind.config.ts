@@ -1,26 +1,32 @@
 import type { Config } from "tailwindcss";
 
-// shadcn-style semantic tokens (border/background/muted/primary/…) backed by
-// CSS variables in src/index.css, so components can speak in roles rather
-// than raw colors.
+// Semantic tokens (border/background/muted/primary/…) backed by CSS variables
+// in src/index.css, so components speak in roles rather than raw colors.
+//
+// Values are stored as raw oklch channels and wrapped here with the
+// <alpha-value> placeholder, which is what keeps opacity modifiers such as
+// bg-primary/10 and focus:ring-primary/40 working. Writing the variables as
+// finished oklch(...) colours instead would silently break every one of them.
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        card: "hsl(var(--card))",
+        border: "oklch(var(--border) / <alpha-value>)",
+        background: "oklch(var(--background) / <alpha-value>)",
+        foreground: "oklch(var(--foreground) / <alpha-value>)",
+        card: "oklch(var(--card) / <alpha-value>)",
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "oklch(var(--muted) / <alpha-value>)",
+          foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
         },
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "oklch(var(--primary) / <alpha-value>)",
+          foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
+          container: "oklch(var(--primary-container) / <alpha-value>)",
         },
-        destructive: "hsl(var(--destructive))",
+        destructive: "oklch(var(--destructive) / <alpha-value>)",
+        "surface-high": "oklch(var(--surface-high) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],

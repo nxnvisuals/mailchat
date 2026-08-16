@@ -2,18 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Weaver palette — calm indigo on warm paper. */
+/* Weaver palette.
+ *
+ * Ported from the design screen built in Lovable (mailchat-coming-soon,
+ * src/routes/design.tsx). Values are raw oklch channels (tailwind.config wraps them), kept exactly
+ * as designed rather than converted to HSL so the relationships survive — oklch
+ * holds perceived lightness steady across hues, which is what makes the
+ * surface ramp below read as one family.
+ *
+ * Token NAMES are unchanged, so every existing component picks up the new look
+ * with no edits. tailwind.config.ts consumes these as var(--x) rather than
+ * hsl(var(--x)), which also keeps opacity modifiers like bg-primary/10 working.
+ */
 :root {
-  --background: 40 30% 97%;
-  --foreground: 235 20% 15%;
-  --card: 0 0% 100%;
-  --border: 234 15% 88%;
-  --muted: 234 20% 94%;
-  --muted-foreground: 234 10% 45%;
-  --primary: 243 60% 51%;
-  --primary-foreground: 0 0% 100%;
-  --destructive: 0 72% 45%;
-  --ring: 243 60% 51%;
+  --background: 0.98 0.005 78.3;
+  --foreground: 0.226 0.015 285.1;
+  --card: 1 0 0;
+  --border: 0.829 0.026 293.1;
+  --muted: 0.967 0.016 297.5;
+  --muted-foreground: 0.398 0.027 288;
+  --primary: 0.373 0.23 270.8;
+  --primary-foreground: 1 0 0;
+  --destructive: 0.577 0.213 27.3;
+  --ring: 0.373 0.23 270.8;
+
+  /* Extra surfaces from the design, for depth the old flat palette couldn't do. */
+  --surface-high: 0.932 0.018 300.1;
+  --primary-container: 0.455 0.22 275.2;
+}
+
+/* The viewer's OS preference, when they haven't chosen explicitly. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: 0.169 0.018 285.1;
+    --foreground: 0.962 0.008 300;
+    --card: 0.216 0.021 287;
+    --border: 0.318 0.026 289;
+    --muted: 0.263 0.023 288;
+    --muted-foreground: 0.712 0.024 288;
+    --primary: 0.702 0.168 279;
+    --primary-foreground: 0.169 0.018 285.1;
+    --destructive: 0.704 0.191 22.2;
+    --ring: 0.702 0.168 279;
+
+    --surface-high: 0.263 0.023 288;
+    --primary-container: 0.612 0.186 277;
+  }
+}
+
+/* An explicit choice wins over the OS, in both directions. */
+:root[data-theme="dark"] {
+  --background: 0.169 0.018 285.1;
+  --foreground: 0.962 0.008 300;
+  --card: 0.216 0.021 287;
+  --border: 0.318 0.026 289;
+  --muted: 0.263 0.023 288;
+  --muted-foreground: 0.712 0.024 288;
+  --primary: 0.702 0.168 279;
+  --primary-foreground: 0.169 0.018 285.1;
+  --destructive: 0.704 0.191 22.2;
+  --ring: 0.702 0.168 279;
+
+  --surface-high: 0.263 0.023 288;
+  --primary-container: 0.612 0.186 277;
 }
 
 body {
@@ -28,9 +79,19 @@ body {
     @apply w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/60 transition;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 hover:opacity-90 active:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 hover:bg-primary-container active:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-muted text-foreground text-sm font-medium px-5 py-2.5 hover:bg-muted/70 disabled:opacity-50 disabled:cursor-not-allowed transition;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-muted text-foreground text-sm font-medium px-5 py-2.5 hover:bg-surface-high disabled:opacity-50 disabled:cursor-not-allowed transition;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
