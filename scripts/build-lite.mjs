@@ -60,7 +60,9 @@ const html = `<!doctype html>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#3E37CD" />
     <title>MailChat</title>
+    <link rel="manifest" href="./manifest.json" />
     <link rel="stylesheet" href="./app.css" />
     <script type="importmap">
     {
@@ -82,11 +84,48 @@ const html = `<!doctype html>
 `;
 writeFileSync(`${out}/index.html`, html);
 
+// 3b. PWA manifest. The share_target uses GET rather than POST so shared text
+// arrives as ordinary query params — a POST target would need a service worker
+// to intercept it, which is a lot of machinery for one text field.
+const manifest = JSON.stringify(
+  {
+    name: "MailChat Composer",
+    short_name: "MailChat",
+    description: "Type one line, send a real email.",
+    start_url: "./",
+    scope: "./",
+    display: "standalone",
+    background_color: "#FAF8F5",
+    theme_color: "#3E37CD",
+    icons: [
+      {
+        src:
+          "data:image/svg+xml," +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#3E37CD"/><text x="50" y="72" font-size="58" text-anchor="middle">💬</text></svg>',
+          ),
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any maskable",
+      },
+    ],
+    share_target: {
+      action: "./compose",
+      method: "GET",
+      params: { title: "title", text: "text", url: "url" },
+    },
+  },
+  null,
+  2,
+);
+writeFileSync(`${out}/manifest.json`, manifest);
+
 // 4. Pack into the function's assets module.
 const files = {
   "index.html": html,
   "app.js": readFileSync(`${out}/app.js`, "utf8"),
   "app.css": readFileSync(`${out}/app.css`, "utf8"),
+  "manifest.json": manifest,
 };
 let report = "";
 for (const [name, content] of Object.entries(files)) {
