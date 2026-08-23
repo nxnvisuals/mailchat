@@ -31,6 +31,9 @@ export interface MailAccount {
   display_name: string;
   signature: string;
   app_password: string | null;
+  google_refresh_token: string | null;
+  google_access_token: string | null;
+  google_token_expires_at: string | null;
   ms_client_id: string | null;
   ms_client_secret: string | null;
   ms_refresh_token: string | null;

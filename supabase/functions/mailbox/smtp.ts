@@ -132,6 +132,24 @@ export class SmtpClient {
     await this.expect(`AUTH PLAIN ${token}`, [235], "AUTH");
   }
 
+  /** OAuth2 sign-in for sending (Google "Sign in with Google" accounts). */
+  async authXoauth2(user: string, accessToken: string): Promise<void> {
+    const token = encodeBase64(new TextEncoder().encode(`user=${user}\x01auth=Bearer ${accessToken}\x01\x01`));
+    await this.send(`AUTH XOAUTH2 ${token}`);
+    let reply = await this.readReply();
+    if (reply.code === 334) {
+      // Failure challenge: an empty line draws out the final status code.
+      await this.send("");
+      reply = await this.readReply();
+    }
+    if (reply.code !== 235) {
+      throw new SmtpError(
+        "Gmail rejected the Google sign-in for sending — reconnect the account with Google.",
+        "auth",
+      );
+    }
+  }
+
   /** Send a fully built RFC 5322 message. */
   async sendMessage(from: string, recipients: string[], message: string): Promise<void> {
     await this.expect(`MAIL FROM:<${from}>`, [250]);

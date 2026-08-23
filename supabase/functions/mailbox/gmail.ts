@@ -116,10 +116,20 @@ async function fetchTextBodies(
   return out;
 }
 
-async function openImap(account: MailAccount): Promise<ImapClient> {
+/**
+ * How a Gmail account signs in. When present, IMAP/SMTP use OAuth2 (XOAUTH2)
+ * with a freshly minted access token ("Sign in with Google" accounts);
+ * otherwise they fall back to the account's app password.
+ */
+export interface GmailAuth {
+  getAccessToken(): Promise<string>;
+}
+
+async function openImap(account: MailAccount, auth?: GmailAuth): Promise<ImapClient> {
   const imap = await ImapClient.connect();
   try {
-    await imap.login(account.email, account.app_password ?? "");
+    if (auth) await imap.authenticateXoauth2(account.email, await auth.getAccessToken());
+    else await imap.login(account.email, account.app_password ?? "");
     return imap;
   } catch (e) {
     imap.close();
@@ -127,10 +137,10 @@ async function openImap(account: MailAccount): Promise<ImapClient> {
   }
 }
 
-export function gmailProvider(account: MailAccount): MailProvider {
+export function gmailProvider(account: MailAccount, auth?: GmailAuth): MailProvider {
   return {
     async listThreads(q, folder) {
-      const imap = await openImap(account);
+      const imap = await openImap(account, auth);
       try {
         let rows: ParsedFetchRow[] = [];
         const items = "UID X-GM-THRID FLAGS INTERNALDATE ENVELOPE BODYSTRUCTURE";
@@ -223,7 +233,7 @@ export function gmailProvider(account: MailAccount): MailProvider {
 
     async getThread(threadId, markRead) {
       if (!/^\d{1,25}$/.test(threadId)) throw new MailError("Bad thread id");
-      const imap = await openImap(account);
+      const imap = await openImap(account, auth);
       try {
         const { allMail } = await imap.findSpecialFolders();
         await imap.select(allMail);
@@ -304,7 +314,7 @@ export function gmailProvider(account: MailAccount): MailProvider {
       if (!/^\d{1,12}$/.test(messageId) || !/^\d{1,4}(\.\d{1,4}){0,8}$/.test(partId)) {
         throw new MailError("Bad attachment reference");
       }
-      const imap = await openImap(account);
+      const imap = await openImap(account, auth);
       try {
         const { allMail } = await imap.findSpecialFolders();
         await imap.select(allMail);
@@ -352,7 +362,8 @@ export function gmailProvider(account: MailAccount): MailProvider {
       });
       const smtp = await SmtpClient.connect();
       try {
-        await smtp.authPlain(account.email, account.app_password ?? "");
+        if (auth) await smtp.authXoauth2(account.email, await auth.getAccessToken());
+        else await smtp.authPlain(account.email, account.app_password ?? "");
         await smtp.sendMessage(
           account.email,
           args.to.map((t) => t.email),

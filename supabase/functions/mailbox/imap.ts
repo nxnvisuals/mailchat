@@ -14,7 +14,7 @@
 //   wedged socket can't hold the edge function open.
 
 import { parseImapLine, asString, type ImapValue } from "./imapParse.ts";
-import { bytesToAscii } from "./mimeText.ts";
+import { bytesToAscii, encodeBase64 } from "./mimeText.ts";
 
 /** Special-use mailboxes, resolved once per connection. */
 export interface SpecialFolders {
@@ -178,6 +178,48 @@ export class ImapClient {
 
   async login(user: string, password: string): Promise<void> {
     await this.command(`LOGIN ${imapQuote(user)} ${imapQuote(password)}`, "LOGIN");
+  }
+
+  /**
+   * OAuth2 sign-in (Google "Sign in with Google" accounts) via SASL XOAUTH2.
+   * The initial response is sent inline; on failure Gmail replies with a "+"
+   * base64 error challenge, which we answer with an empty line to draw out the
+   * tagged NO before reporting an auth error.
+   */
+  async authenticateXoauth2(user: string, accessToken: string): Promise<void> {
+    const sasl = encodeBase64(new TextEncoder().encode(`user=${user}\x01auth=Bearer ${accessToken}\x01\x01`));
+    const tag = `A${++this.tagCounter}`;
+    try {
+      await withTimeout(
+        writeAll(this.conn, new TextEncoder().encode(`${tag} AUTHENTICATE XOAUTH2 ${sasl}\r\n`)),
+        OP_TIMEOUT_MS,
+        "sending to Gmail (IMAP)",
+      );
+    } catch (e) {
+      if (e instanceof ImapError) throw e;
+      throw new ImapError(`Lost connection to Gmail: ${(e as Error).message}`, "network");
+    }
+    for (;;) {
+      const logical = await this.readLogicalLine();
+      if (logical.text.startsWith("+")) {
+        // Auth failed: reply with an empty line to elicit the tagged status.
+        await withTimeout(
+          writeAll(this.conn, new TextEncoder().encode("\r\n")),
+          OP_TIMEOUT_MS,
+          "sending to Gmail (IMAP)",
+        );
+        continue;
+      }
+      if (logical.text.startsWith(`${tag} `)) {
+        const status = logical.text.slice(tag.length + 1);
+        if (status.toUpperCase().startsWith("OK")) return;
+        throw new ImapError(
+          "Gmail rejected the Google sign-in — the connection may have expired. Open Mail settings and reconnect with Google.",
+          "auth",
+        );
+      }
+      // Ignore any other untagged chatter before the tagged completion.
+    }
   }
 
   /** Find Gmail's special folders regardless of account language. */

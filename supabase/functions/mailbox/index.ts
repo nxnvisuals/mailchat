@@ -20,8 +20,9 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@^0.110.0";
 
-import { gmailProvider, verifyGmailLogin, ImapError, SmtpError } from "./gmail.ts";
+import { gmailProvider, verifyGmailLogin, ImapError, SmtpError, type GmailAuth } from "./gmail.ts";
 import { outlookProvider, exchangeOutlookCode, type TokenSaver } from "./outlook.ts";
+import { exchangeGoogleCode, refreshGoogleAccessToken } from "./google.ts";
 import { MailError, type MailAccount, type MailFolder, type MailProvider } from "./types.ts";
 import { isValidEmail, type OutAddress, type OutAttachment } from "./mimeBuild.ts";
 
@@ -96,6 +97,30 @@ function providerFor(admin: Db, account: MailAccount): MailProvider {
         .eq("id", account.id);
     };
     return outlookProvider(account, saveTokens);
+  }
+  // A Gmail account connected with "Sign in with Google" carries a refresh
+  // token; hand the provider an access-token getter that refreshes and
+  // persists on demand. Otherwise it falls back to the app password.
+  if (account.google_refresh_token) {
+    const auth: GmailAuth = {
+      async getAccessToken() {
+        const exp = account.google_token_expires_at ? new Date(account.google_token_expires_at).getTime() : 0;
+        if (account.google_access_token && exp - Date.now() > 60_000) return account.google_access_token;
+        const { accessToken, expiresAt } = await refreshGoogleAccessToken(account.google_refresh_token ?? "");
+        account.google_access_token = accessToken;
+        account.google_token_expires_at = expiresAt;
+        await admin
+          .from("mail_accounts")
+          .update({
+            google_access_token: accessToken,
+            google_token_expires_at: expiresAt,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", account.id);
+        return accessToken;
+      },
+    };
+    return gmailProvider(account, auth);
   }
   return gmailProvider(account);
 }
@@ -307,6 +332,33 @@ Deno.serve(async (req) => {
         if (insertError) {
           console.error("[mailbox] insert failed", insertError);
           return jsonResponse({ error: "Signed in to Microsoft, but saving the account failed." }, 500);
+        }
+        const accounts = await listAccounts(admin);
+        return jsonResponse({ accounts: accounts.map(accountSummary), connectedEmail: email });
+      }
+
+      // ────────────────────────────────────────────────────────────
+      case "connectGoogle": {
+        const code = String(payload.code ?? "");
+        const redirectUri = String(payload.redirectUri ?? "");
+        const codeVerifier = String(payload.codeVerifier ?? "");
+        if (!code || !redirectUri || !codeVerifier) {
+          return jsonResponse({ error: "The Google sign-in details were incomplete — please try connecting again." }, 400);
+        }
+        const { refreshToken, accessToken, expiresAt, email } = await exchangeGoogleCode({ code, redirectUri, codeVerifier });
+        await admin.from("mail_accounts").delete().eq("provider", "gmail").eq("email", email);
+        const { error: insertError } = await admin.from("mail_accounts").insert({
+          provider: "gmail",
+          email,
+          display_name: String(payload.displayName ?? "").trim().slice(0, 120),
+          signature: String(payload.signature ?? "").trim().slice(0, 1000),
+          google_refresh_token: refreshToken,
+          google_access_token: accessToken,
+          google_token_expires_at: expiresAt,
+        });
+        if (insertError) {
+          console.error("[mailbox] insert failed", insertError);
+          return jsonResponse({ error: "Signed in with Google, but saving the account failed." }, 500);
         }
         const accounts = await listAccounts(admin);
         return jsonResponse({ accounts: accounts.map(accountSummary), connectedEmail: email });
