@@ -379,6 +379,31 @@ Deno.serve(async (req) => {
       }
 
       // ────────────────────────────────────────────────────────────
+      // Auto-connect the signed-in user's own Gmail from the refresh token
+      // handed back by their "Continue with Google" app login — no separate
+      // mailbox-connect step. The login email is the mailbox.
+      case "connectGoogleToken": {
+        const refreshToken = String(payload.refreshToken ?? "");
+        if (!refreshToken) return jsonResponse({ error: "No Google refresh token was provided." }, 400);
+        const email = user.email.toLowerCase();
+        await admin.from("mail_accounts").delete().eq("user_id", user.id).eq("provider", "gmail").eq("email", email);
+        const { error: insertError } = await admin.from("mail_accounts").insert({
+          user_id: user.id,
+          provider: "gmail",
+          email,
+          display_name: "",
+          signature: "",
+          google_refresh_token: refreshToken,
+        });
+        if (insertError) {
+          console.error("[mailbox] connectGoogleToken insert failed", insertError);
+          return jsonResponse({ error: "Signed in, but connecting your Gmail failed." }, 500);
+        }
+        const accounts = await listAccounts(admin, user.id);
+        return jsonResponse({ accounts: accounts.map(accountSummary), connectedEmail: email });
+      }
+
+      // ────────────────────────────────────────────────────────────
       case "saveSettings": {
         const account = await loadAccount(admin, payload.accountId, user.id);
         const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
