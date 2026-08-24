@@ -70,15 +70,26 @@ function accountSummary(a: MailAccount) {
   };
 }
 
-async function listAccounts(admin: Db): Promise<MailAccount[]> {
-  const { data } = await admin.from("mail_accounts").select("*").order("created_at", { ascending: true });
+// Every query is scoped to the signed-in user's id: a mailbox is only ever
+// visible to the Weaver account that connected it.
+async function listAccounts(admin: Db, userId: string): Promise<MailAccount[]> {
+  const { data } = await admin
+    .from("mail_accounts")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
   return (data as MailAccount[] | null) ?? [];
 }
 
-async function loadAccount(admin: Db, accountId: unknown): Promise<MailAccount> {
+async function loadAccount(admin: Db, accountId: unknown, userId: string): Promise<MailAccount> {
   const id = String(accountId ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) throw new MailError("That mailbox isn't connected any more.", "auth");
-  const { data } = await admin.from("mail_accounts").select("*").eq("id", id).maybeSingle();
+  const { data } = await admin
+    .from("mail_accounts")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
   if (!data) throw new MailError("That mailbox isn't connected any more.", "auth");
   return data as MailAccount;
 }
@@ -267,7 +278,7 @@ Deno.serve(async (req) => {
     switch (action) {
       // ────────────────────────────────────────────────────────────
       case "status": {
-        const accounts = await listAccounts(admin);
+        const accounts = await listAccounts(admin, user.id);
         return jsonResponse({ accounts: accounts.map(accountSummary) });
       }
 
@@ -284,8 +295,9 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: "The app password looks too short — it should be 16 letters." }, 400);
         }
         await verifyGmailLogin(email, appPassword);
-        await admin.from("mail_accounts").delete().eq("provider", "gmail").eq("email", email);
+        await admin.from("mail_accounts").delete().eq("user_id", user.id).eq("provider", "gmail").eq("email", email);
         const { error: insertError } = await admin.from("mail_accounts").insert({
+          user_id: user.id,
           provider: "gmail",
           email,
           app_password: appPassword,
@@ -296,7 +308,7 @@ Deno.serve(async (req) => {
           console.error("[mailbox] insert failed", insertError);
           return jsonResponse({ error: "Connected to Gmail, but saving the account failed." }, 500);
         }
-        const accounts = await listAccounts(admin);
+        const accounts = await listAccounts(admin, user.id);
         return jsonResponse({ accounts: accounts.map(accountSummary) });
       }
 
@@ -317,8 +329,9 @@ Deno.serve(async (req) => {
           redirectUri,
           codeVerifier,
         });
-        await admin.from("mail_accounts").delete().eq("provider", "outlook").eq("email", email);
+        await admin.from("mail_accounts").delete().eq("user_id", user.id).eq("provider", "outlook").eq("email", email);
         const { error: insertError } = await admin.from("mail_accounts").insert({
+          user_id: user.id,
           provider: "outlook",
           email,
           display_name: String(payload.displayName ?? "").trim().slice(0, 120) || displayName,
@@ -333,7 +346,7 @@ Deno.serve(async (req) => {
           console.error("[mailbox] insert failed", insertError);
           return jsonResponse({ error: "Signed in to Microsoft, but saving the account failed." }, 500);
         }
-        const accounts = await listAccounts(admin);
+        const accounts = await listAccounts(admin, user.id);
         return jsonResponse({ accounts: accounts.map(accountSummary), connectedEmail: email });
       }
 
@@ -346,8 +359,9 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: "The Google sign-in details were incomplete — please try connecting again." }, 400);
         }
         const { refreshToken, accessToken, expiresAt, email } = await exchangeGoogleCode({ code, redirectUri, codeVerifier });
-        await admin.from("mail_accounts").delete().eq("provider", "gmail").eq("email", email);
+        await admin.from("mail_accounts").delete().eq("user_id", user.id).eq("provider", "gmail").eq("email", email);
         const { error: insertError } = await admin.from("mail_accounts").insert({
+          user_id: user.id,
           provider: "gmail",
           email,
           display_name: String(payload.displayName ?? "").trim().slice(0, 120),
@@ -360,13 +374,13 @@ Deno.serve(async (req) => {
           console.error("[mailbox] insert failed", insertError);
           return jsonResponse({ error: "Signed in with Google, but saving the account failed." }, 500);
         }
-        const accounts = await listAccounts(admin);
+        const accounts = await listAccounts(admin, user.id);
         return jsonResponse({ accounts: accounts.map(accountSummary), connectedEmail: email });
       }
 
       // ────────────────────────────────────────────────────────────
       case "saveSettings": {
-        const account = await loadAccount(admin, payload.accountId);
+        const account = await loadAccount(admin, payload.accountId, user.id);
         const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
         if (typeof payload.displayName === "string") update.display_name = payload.displayName.trim().slice(0, 120);
         if (typeof payload.signature === "string") update.signature = payload.signature.trim().slice(0, 1000);
@@ -382,21 +396,21 @@ Deno.serve(async (req) => {
           console.error("[mailbox] settings update failed", updateError);
           return jsonResponse({ error: "Saving settings failed." }, 500);
         }
-        const accounts = await listAccounts(admin);
+        const accounts = await listAccounts(admin, user.id);
         return jsonResponse({ accounts: accounts.map(accountSummary) });
       }
 
       // ────────────────────────────────────────────────────────────
       case "disconnect": {
-        const account = await loadAccount(admin, payload.accountId);
+        const account = await loadAccount(admin, payload.accountId, user.id);
         await admin.from("mail_accounts").delete().eq("id", account.id);
-        const accounts = await listAccounts(admin);
+        const accounts = await listAccounts(admin, user.id);
         return jsonResponse({ accounts: accounts.map(accountSummary) });
       }
 
       // ────────────────────────────────────────────────────────────
       case "threads": {
-        const account = await loadAccount(admin, payload.accountId);
+        const account = await loadAccount(admin, payload.accountId, user.id);
         const q = String(payload.q ?? "").trim();
         // Allow-list rather than a cast: an unknown value falls back to the
         // inbox instead of reaching a provider as an arbitrary folder name.
@@ -410,7 +424,7 @@ Deno.serve(async (req) => {
 
       // ────────────────────────────────────────────────────────────
       case "thread": {
-        const account = await loadAccount(admin, payload.accountId);
+        const account = await loadAccount(admin, payload.accountId, user.id);
         const threadId = String(payload.threadId ?? "");
         const markRead = payload.markRead !== false;
         const result = await providerFor(admin, account).getThread(threadId, markRead);
@@ -419,7 +433,7 @@ Deno.serve(async (req) => {
 
       // ────────────────────────────────────────────────────────────
       case "attachment": {
-        const account = await loadAccount(admin, payload.accountId);
+        const account = await loadAccount(admin, payload.accountId, user.id);
         const result = await providerFor(admin, account).getAttachment(
           String(payload.messageId ?? ""),
           String(payload.partId ?? ""),
@@ -429,7 +443,7 @@ Deno.serve(async (req) => {
 
       // ────────────────────────────────────────────────────────────
       case "polish": {
-        const account = await loadAccount(admin, payload.accountId);
+        const account = await loadAccount(admin, payload.accountId, user.id);
         const note = String(payload.text ?? "").trim();
         if (!note) return jsonResponse({ error: "Type your reply first." }, 400);
         // A recipient with no display name comes through as their email
@@ -468,7 +482,7 @@ Deno.serve(async (req) => {
 
       // ────────────────────────────────────────────────────────────
       case "send": {
-        const account = await loadAccount(admin, payload.accountId);
+        const account = await loadAccount(admin, payload.accountId, user.id);
         const toRaw = Array.isArray(payload.to) ? (payload.to as unknown[]) : [];
         const to: OutAddress[] = toRaw
           .map((t) =>

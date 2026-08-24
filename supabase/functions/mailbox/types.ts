@@ -26,6 +26,7 @@ export class MailError extends Error {
 
 export interface MailAccount {
   id: string;
+  user_id: string;
   provider: "gmail" | "outlook";
   email: string;
   display_name: string;
